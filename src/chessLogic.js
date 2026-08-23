@@ -1,9 +1,6 @@
 import { Chess } from "chess.js";
 import { analyzePosition } from "./engine";
 
-// Chequeos instantáneos (sin motor): material igual, piezas colgadas,
-// y que la jugada "correcta" sea legal. Esto ya lo teníamos.
-
 const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
 export function materialBalance(fen) {
@@ -70,37 +67,58 @@ export function validateExercise({ fen, correctMoveSan }) {
   return { valid: errors.length === 0, errors };
 }
 
-// Chequeo con motor (async, tarda unos segundos): confirma que la jugada
-// "correcta" del ejercicio es realmente la que el motor prefiere, o que
-// perder contra la mejor jugada del motor es mínimo (medio peón o menos,
-// porque muchas posiciones tienen más de una jugada razonable).
+// Cuánta diferencia de evaluación (en peones) toleramos antes de decir
+// "esta jugada también es razonable, no hace falta que sea LA única".
+const ACCEPTABLE_MARGIN = 0.3;
+
 export async function verifyWithEngine({ fen, correctMoveSan }, depth = 14) {
   const chess = new Chess(fen);
+  const sideToMove = chess.turn(); // 'w' o 'b'
   const legal = chess.move(correctMoveSan);
   if (!legal) {
     return { valid: false, reason: `"${correctMoveSan}" no es legal en esta posición` };
   }
   const correctUci = legal.from + legal.to + (legal.promotion || "");
+  const fenAfterCorrect = chess.fen();
 
-  const { bestMove, evaluation } = await analyzePosition(fen, depth);
+  // Evaluación de la posición jugando la mejor jugada del motor
+  const { bestMove, evaluation: evalBest } = await analyzePosition(fen, depth);
 
   if (bestMove === correctUci) {
-    return { valid: true, engineBest: bestMove, evaluation };
+    return { valid: true, engineBest: bestMove, evaluation: evalBest };
   }
 
-  // Evaluamos qué tan buena es la jugada "correcta" comparada con la del motor
-  const afterCorrect = new Chess(fen);
-  afterCorrect.move(correctMoveSan);
-  const { evaluation: evalAfterCorrect } = await analyzePosition(
-    afterCorrect.fen(),
+  // Evaluación de la posición después de jugar la jugada "correcta" marcada.
+  // Esa búsqueda queda desde el punto de vista del OTRO bando (que ahora
+  // mueve), así que invertimos el signo para comparar todo desde la misma
+  // perspectiva (el bando que estaba por mover originalmente).
+  const { evaluation: evalRaw } = await analyzePosition(
+    fenAfterCorrect,
     Math.max(depth - 4, 8)
   );
+  const evalAfterCorrect = evalRaw === null ? null : -evalRaw;
+
+  const diff =
+    evalBest !== null && evalAfterCorrect !== null
+      ? Math.abs(evalBest - evalAfterCorrect)
+      : null;
+
+  if (diff !== null && diff <= ACCEPTABLE_MARGIN) {
+    return {
+      valid: true,
+      engineBest: bestMove,
+      evaluation: evalBest,
+      evalAfterCorrect,
+      note: `Diferencia de solo ${diff.toFixed(2)} peones — ambas jugadas son razonables.`,
+    };
+  }
 
   return {
     valid: false,
     engineBest: bestMove,
-    evaluation,
+    evaluation: evalBest,
     evalAfterCorrect,
+    diff,
     reason: `El motor prefiere ${bestMove} en vez de ${correctUci}`,
   };
 }
