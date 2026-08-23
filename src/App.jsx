@@ -3,8 +3,8 @@ import { Chessboard } from "react-chessboard";
 import { validateExercise, verifyWithEngine } from "./chessLogic";
 
 const EXERCISE = {
-  fen: "2rr2k1/pp3ppp/5n2/3PN3/8/8/PP4PP/2RR2K1 w - - 0 1",
-  correctMoveSan: "Rxc8",
+  fen: "3r1rk1/pp3ppp/5n2/3PN3/8/8/PP4PP/2RR2K1 w - - 0 1",
+  correctMoveSan: "Rc2",
   prompt: "Blancas con IQP y piezas activas, material igual. ¿Cuál es el plan?",
   options: [
     {
@@ -13,9 +13,9 @@ const EXERCISE = {
       feedback: "Entrega la fuerza del peón sin necesidad — mientras no esté amenazado, no hay que apurarlo.",
     },
     {
-      text: "Cambiar torres en la columna c abierta, simplificando hacia una posición favorable",
+      text: "Doblar torres / reagrupar piezas para aumentar la presión, sin cambiar nada todavía",
       correct: true,
-      feedback: "Confirmado por el motor: el cambio de torres es la jugada más precisa aquí — simplifica sin ceder nada.",
+      feedback: "Mientras el peón no esté amenazado, usa el tiempo para aumentar la presión con las piezas.",
     },
     {
       text: "Retirar una pieza a defender el peón preventivamente",
