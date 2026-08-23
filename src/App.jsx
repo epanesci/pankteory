@@ -4,7 +4,7 @@ import { validateExercise, verifyWithEngine } from "./chessLogic";
 
 const EXERCISE = {
   fen: "2rr2k1/pp3ppp/5n2/3PN3/8/8/PP4PP/2RR2K1 w - - 0 1",
-  correctMoveSan: "Rc2",
+  correctMoveSan: "a4",
   prompt: "Blancas con IQP y piezas activas, material igual. ¿Cuál es el plan?",
   options: [
     {
