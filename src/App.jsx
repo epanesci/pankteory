@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Chessboard } from "react-chessboard";
+import { validateExercise } from "./chessLogic";
 
 const EXERCISE = {
   fen: "2r3k1/pp3ppp/5n2/3PN3/8/8/PP3PPP/2R3K1 w - - 0 1",
+  correctMoveSan: "Rc2",
   prompt: "Blancas con IQP y piezas activas, material igual. ¿Cuál es el plan?",
   options: [
     {
@@ -26,10 +28,23 @@ const EXERCISE = {
 export default function App() {
   const [answered, setAnswered] = useState(null);
 
+  const validation = useMemo(() => validateExercise(EXERCISE), []);
+
   return (
     <div style={{ maxWidth: 480, margin: "40px auto", fontFamily: "sans-serif" }}>
       <h1 style={{ textAlign: "center" }}>Chess Elo App</h1>
       <h3 style={{ textAlign: "center", color: "#555" }}>IQP · Ejercicio 1</h3>
+
+      {!validation.valid && (
+        <div style={{ background: "#5a2222", color: "#fff", padding: 10, marginBottom: 10, borderRadius: 6 }}>
+          <strong>⚠ Ejercicio no publicable:</strong>
+          <ul>
+            {validation.errors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <Chessboard position={EXERCISE.fen} arePiecesDraggable={false} />
 
