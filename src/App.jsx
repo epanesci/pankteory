@@ -1,10 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Chessboard } from "react-chessboard";
-import { validateExercise } from "./chessLogic";
+import { validateExercise, verifyWithEngine } from "./chessLogic";
 
-// Posición real del Ejercicio 1 (IQP) que ya revisamos a fondo en el chat:
-// material igual (torre+torre+caballo+5 peones cada bando) y torres
-// dobladas defendiéndose entre sí en ambos lados.
 const EXERCISE = {
   fen: "2rr2k1/pp3ppp/5n2/3PN3/8/8/PP4PP/2RR2K1 w - - 0 1",
   correctMoveSan: "Rc2",
@@ -30,8 +27,25 @@ const EXERCISE = {
 
 export default function App() {
   const [answered, setAnswered] = useState(null);
+  const [engineStatus, setEngineStatus] = useState("cargando"); // cargando | ok | duda | error
 
   const validation = useMemo(() => validateExercise(EXERCISE), []);
+
+  useEffect(() => {
+    if (!validation.valid) return; // no molestamos al motor si ya está mal a nivel básico
+    let cancelled = false;
+    verifyWithEngine(EXERCISE)
+      .then((result) => {
+        if (cancelled) return;
+        setEngineStatus(result.valid ? "ok" : "duda");
+      })
+      .catch(() => {
+        if (!cancelled) setEngineStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [validation.valid]);
 
   return (
     <div style={{ maxWidth: 480, margin: "40px auto", fontFamily: "sans-serif" }}>
@@ -47,6 +61,20 @@ export default function App() {
             ))}
           </ul>
         </div>
+      )}
+
+      {validation.valid && engineStatus === "cargando" && (
+        <p style={{ fontSize: 13, color: "#888", textAlign: "center" }}>Verificando con el motor…</p>
+      )}
+      {validation.valid && engineStatus === "duda" && (
+        <div style={{ background: "#5a4a1e", color: "#fff", padding: 10, marginBottom: 10, borderRadius: 6, fontSize: 13 }}>
+          ⚠ El motor no coincide exactamente con la jugada marcada como correcta. Revisar antes de publicar.
+        </div>
+      )}
+      {validation.valid && engineStatus === "error" && (
+        <p style={{ fontSize: 12, color: "#a15050", textAlign: "center" }}>
+          No se pudo cargar el motor (revisar conexión).
+        </p>
       )}
 
       <Chessboard position={EXERCISE.fen} arePiecesDraggable={false} />

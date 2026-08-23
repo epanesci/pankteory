@@ -1,9 +1,8 @@
 import { Chess } from "chess.js";
+import { analyzePosition } from "./engine";
 
-// Valida una posición/ejercicio ANTES de que llegue a la pantalla:
-// - material igual entre ambos bandos
-// - ninguna pieza colgada (atacada y sin defensa suficiente)
-// - la jugada marcada como "correcta" es legal en esa posición
+// Chequeos instantáneos (sin motor): material igual, piezas colgadas,
+// y que la jugada "correcta" sea legal. Esto ya lo teníamos.
 
 const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
@@ -71,5 +70,37 @@ export function validateExercise({ fen, correctMoveSan }) {
   return { valid: errors.length === 0, errors };
 }
 
-// Pendiente (necesita Stockfish): confirmar que correctMoveSan es
-// objetivamente la mejor jugada del motor, no solo legal.
+// Chequeo con motor (async, tarda unos segundos): confirma que la jugada
+// "correcta" del ejercicio es realmente la que el motor prefiere, o que
+// perder contra la mejor jugada del motor es mínimo (medio peón o menos,
+// porque muchas posiciones tienen más de una jugada razonable).
+export async function verifyWithEngine({ fen, correctMoveSan }, depth = 14) {
+  const chess = new Chess(fen);
+  const legal = chess.move(correctMoveSan);
+  if (!legal) {
+    return { valid: false, reason: `"${correctMoveSan}" no es legal en esta posición` };
+  }
+  const correctUci = legal.from + legal.to + (legal.promotion || "");
+
+  const { bestMove, evaluation } = await analyzePosition(fen, depth);
+
+  if (bestMove === correctUci) {
+    return { valid: true, engineBest: bestMove, evaluation };
+  }
+
+  // Evaluamos qué tan buena es la jugada "correcta" comparada con la del motor
+  const afterCorrect = new Chess(fen);
+  afterCorrect.move(correctMoveSan);
+  const { evaluation: evalAfterCorrect } = await analyzePosition(
+    afterCorrect.fen(),
+    Math.max(depth - 4, 8)
+  );
+
+  return {
+    valid: false,
+    engineBest: bestMove,
+    evaluation,
+    evalAfterCorrect,
+    reason: `El motor prefiere ${bestMove} en vez de ${correctUci}`,
+  };
+}
