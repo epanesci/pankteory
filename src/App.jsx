@@ -4,7 +4,7 @@ import { validateExercise, verifyWithEngine } from "./chessLogic";
 
 const EXERCISE = {
   fen: "2rr2k1/pp3ppp/5n2/3PN3/8/8/PP4PP/2RR2K1 w - - 0 1",
-  correctMoveSan: "a4",
+  correctMoveSan: "Rxc8",
   prompt: "Blancas con IQP y piezas activas, material igual. ¿Cuál es el plan?",
   options: [
     {
@@ -13,9 +13,9 @@ const EXERCISE = {
       feedback: "Entrega la fuerza del peón sin necesidad — mientras no esté amenazado, no hay que apurarlo.",
     },
     {
-      text: "Doblar torres en la columna abierta y presionar con las piezas",
+      text: "Cambiar torres en la columna c abierta, simplificando hacia una posición favorable",
       correct: true,
-      feedback: "Correcto. Mientras el peón no esté amenazado, usa el tiempo para aumentar la presión.",
+      feedback: "Confirmado por el motor: el cambio de torres es la jugada más precisa aquí — simplifica sin ceder nada.",
     },
     {
       text: "Retirar una pieza a defender el peón preventivamente",
