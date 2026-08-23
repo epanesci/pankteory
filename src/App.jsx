@@ -27,20 +27,19 @@ const EXERCISE = {
 
 export default function App() {
   const [answered, setAnswered] = useState(null);
-  const [engineStatus, setEngineStatus] = useState("cargando"); // cargando | ok | duda | error
+  const [engineResult, setEngineResult] = useState(null); // null = cargando
 
   const validation = useMemo(() => validateExercise(EXERCISE), []);
 
   useEffect(() => {
-    if (!validation.valid) return; // no molestamos al motor si ya está mal a nivel básico
+    if (!validation.valid) return;
     let cancelled = false;
     verifyWithEngine(EXERCISE)
       .then((result) => {
-        if (cancelled) return;
-        setEngineStatus(result.valid ? "ok" : "duda");
+        if (!cancelled) setEngineResult(result);
       })
-      .catch(() => {
-        if (!cancelled) setEngineStatus("error");
+      .catch((err) => {
+        if (!cancelled) setEngineResult({ valid: false, reason: "Error cargando el motor: " + err.message });
       });
     return () => {
       cancelled = true;
@@ -63,18 +62,27 @@ export default function App() {
         </div>
       )}
 
-      {validation.valid && engineStatus === "cargando" && (
+      {validation.valid && engineResult === null && (
         <p style={{ fontSize: 13, color: "#888", textAlign: "center" }}>Verificando con el motor…</p>
       )}
-      {validation.valid && engineStatus === "duda" && (
-        <div style={{ background: "#5a4a1e", color: "#fff", padding: 10, marginBottom: 10, borderRadius: 6, fontSize: 13 }}>
-          ⚠ El motor no coincide exactamente con la jugada marcada como correcta. Revisar antes de publicar.
+
+      {validation.valid && engineResult && !engineResult.valid && (
+        <div style={{ background: "#5a4a1e", color: "#fff", padding: 10, marginBottom: 10, borderRadius: 6, fontSize: 13, lineHeight: 1.5 }}>
+          <strong>⚠ El motor no coincide:</strong>
+          <div>Jugada marcada como correcta: {EXERCISE.correctMoveSan}</div>
+          {engineResult.engineBest && <div>Jugada preferida por el motor: {engineResult.engineBest}</div>}
+          {engineResult.evaluation !== undefined && engineResult.evaluation !== null && (
+            <div>Evaluación tras la jugada del motor: {engineResult.evaluation > 0 ? "+" : ""}{engineResult.evaluation}</div>
+          )}
+          {engineResult.evalAfterCorrect !== undefined && engineResult.evalAfterCorrect !== null && (
+            <div>Evaluación tras {EXERCISE.correctMoveSan}: {engineResult.evalAfterCorrect > 0 ? "+" : ""}{engineResult.evalAfterCorrect}</div>
+          )}
+          {engineResult.reason && !engineResult.engineBest && <div>{engineResult.reason}</div>}
         </div>
       )}
-      {validation.valid && engineStatus === "error" && (
-        <p style={{ fontSize: 12, color: "#a15050", textAlign: "center" }}>
-          No se pudo cargar el motor (revisar conexión).
-        </p>
+
+      {validation.valid && engineResult && engineResult.valid && (
+        <p style={{ fontSize: 12, color: "#5a9a5a", textAlign: "center" }}>✓ Verificado por el motor</p>
       )}
 
       <Chessboard position={EXERCISE.fen} arePiecesDraggable={false} />
