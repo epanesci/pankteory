@@ -2,8 +2,11 @@ import React, { useState, useMemo } from "react";
 import { Chessboard } from "react-chessboard";
 import { validateExercise } from "./chessLogic";
 
+// Posición real del Ejercicio 1 (IQP) que ya revisamos a fondo en el chat:
+// material igual (torre+torre+caballo+5 peones cada bando) y torres
+// dobladas defendiéndose entre sí en ambos lados.
 const EXERCISE = {
-  fen: "2r3k1/pp3ppp/5n2/3PN3/8/8/PP3PPP/2R3K1 w - - 0 1",
+  fen: "2rr2k1/pp3ppp/5n2/3PN3/8/8/PP4PP/2RR2K1 w - - 0 1",
   correctMoveSan: "Rc2",
   prompt: "Blancas con IQP y piezas activas, material igual. ¿Cuál es el plan?",
   options: [
